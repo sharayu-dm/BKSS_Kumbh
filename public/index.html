@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kumbh – MCQ Question Paper</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <p class="eyebrow">KUMBH ASSESSMENT</p>
+      <h1 id="page-title">MCQ Question Paper</h1>
+      <p id="page-description">Select a test to begin.</p>
+    </header>
+
+    <section id="test-selection" aria-labelledby="test-selection-title">
+      <h2 id="test-selection-title">Choose a test</h2>
+      <div id="test-options" class="test-options"></div>
+      <p id="selection-error" class="error" hidden></p>
+    </section>
+
+    <section id="quiz" hidden>
+      <button type="button" id="back-to-tests" class="back">Back to tests</button>
+      <form id="paper" novalidate hidden>
+        <section class="card student">
+          <label>
+            Name of the Student
+            <input type="text" id="name" required autocomplete="off">
+          </label>
+          <label>
+            Roll Number
+            <input type="text" id="roll" required autocomplete="off">
+          </label>
+        </section>
+
+        <div id="questions"></div>
+
+        <p id="error" class="error" hidden></p>
+        <button type="submit" id="submit">Submit</button>
+      </form>
+    </section>
+
+    <section id="result" class="card result" hidden>
+      <h2>Thank you!</h2>
+      <p>Your marks have been submitted.</p>
+      <button type="button" id="another-test">Choose another test</button>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
