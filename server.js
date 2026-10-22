@@ -8,18 +8,118 @@ const questionSets = [
   require('./questions2'),
 ];
 const tests = new Map(questionSets.map((questions, index) => [index + 1, questions]));
-const maxQuestions = Math.max(...questionSets.map((questions) => questions.length));
+const questionFiles = new Map([
+  [1, path.join(__dirname, 'questions.js')],
+  [2, path.join(__dirname, 'questions1.js')],
+  [3, path.join(__dirname, 'questions2.js')],
+]);
 
 const PORT = process.env.PORT || 3000;
 const DATA_DIR = path.join(__dirname, 'data');
 const MARKSHEET = path.join(DATA_DIR, 'marksheet.xlsx');
 const LETTERS = ['A', 'B', 'C', 'D'];
+const QUESTION_HEADERS = [
+  'Q No',
+  'Question Description',
+  'Option A',
+  'Option B',
+  'Option C',
+  'Option D',
+  'Correct Choice',
+];
+const MAX_QUESTIONS = 200;
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+function currentMaxQuestions() {
+  return Math.max(...Array.from(tests.values(), (questions) => questions.length));
+}
+
+function uploadError(message) {
+  const error = new Error(message);
+  error.status = 400;
+  return error;
+}
+
+function cellText(row, columnNumber, fieldName, rowNumber) {
+  const value = row.getCell(columnNumber).value;
+  if (value === null || value === undefined || value === '') return '';
+  if (typeof value !== 'string' && typeof value !== 'number') {
+    throw uploadError(`Row ${rowNumber}: ${fieldName} must be plain text or a number, not a formula.`);
+  }
+  return String(value).trim();
+}
+
+function parseQuestionWorkbook(buffer) {
+  const workbook = new ExcelJS.Workbook();
+
+  return workbook.xlsx.load(buffer).then(() => {
+    const sheet = workbook.worksheets[0];
+    if (!sheet) throw uploadError('The Excel file does not contain a worksheet.');
+
+    const headerColumns = new Map();
+    sheet.getRow(1).eachCell((cell, columnNumber) => {
+      const header = String(cell.value || '').trim().replace(/\s+/g, ' ').toLowerCase();
+      if (!header) return;
+      if (headerColumns.has(header)) {
+        throw uploadError(`The template contains a duplicate column: ${cell.value}.`);
+      }
+      headerColumns.set(header, columnNumber);
+    });
+
+    const missingHeaders = QUESTION_HEADERS.filter(
+      (header) => !headerColumns.has(header.toLowerCase()),
+    );
+    if (missingHeaders.length) {
+      throw uploadError(`This file does not match the template. Missing columns: ${missingHeaders.join(', ')}.`);
+    }
+
+    const columns = QUESTION_HEADERS.map((header) => headerColumns.get(header.toLowerCase()));
+    const questions = [];
+
+    for (let rowNumber = 2; rowNumber <= sheet.rowCount; rowNumber += 1) {
+      const row = sheet.getRow(rowNumber);
+      const values = columns.map((columnNumber, index) => (
+        cellText(row, columnNumber, QUESTION_HEADERS[index], rowNumber)
+      ));
+      if (values.every((value) => !value)) continue;
+
+      const [questionNumber, question, ...rest] = values;
+      const [optionA, optionB, optionC, optionD, correctChoice] = rest;
+      const parsedQuestionNumber = Number(questionNumber);
+      if (!Number.isInteger(parsedQuestionNumber) || parsedQuestionNumber !== questions.length + 1) {
+        throw uploadError(`Row ${rowNumber}: Q No must be ${questions.length + 1}.`);
+      }
+      if (!question) throw uploadError(`Row ${rowNumber}: Question Description is required.`);
+      if ([optionA, optionB, optionC, optionD].some((option) => !option)) {
+        throw uploadError(`Row ${rowNumber}: all four answer options are required.`);
+      }
+      if (!/^[A-D]$/i.test(correctChoice)) {
+        throw uploadError(`Row ${rowNumber}: Correct Choice must be A, B, C, or D.`);
+      }
+      if (questions.length >= MAX_QUESTIONS) {
+        throw uploadError(`A test cannot contain more than ${MAX_QUESTIONS} questions.`);
+      }
+
+      questions.push({
+        question,
+        options: [optionA, optionB, optionC, optionD],
+        answer: correctChoice.toUpperCase().charCodeAt(0) - 65,
+      });
+    }
+
+    if (!questions.length) throw uploadError('The template has no questions. Add at least one question and try again.');
+    return questions;
+  }).catch((error) => {
+    if (error.status) throw error;
+    throw uploadError('Could not read this Excel file. Upload a valid .xlsx workbook using the template.');
+  });
+}
 
 // Questions without the answers, for the browser.
 app.get('/api/tests', (req, res) => {
@@ -34,6 +134,89 @@ app.get('/api/tests/:testNumber/questions', (req, res) => {
   if (!questions) return res.status(404).json({ error: 'Test not found.' });
   res.json(questions.map(({ question, options }) => ({ question, options })));
 });
+
+app.get('/api/tests/:testNumber/template', async (req, res) => {
+  const testNumber = Number(req.params.testNumber);
+  if (!questionFiles.has(testNumber)) return res.status(404).json({ error: 'Test not found.' });
+
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet('Questions');
+  sheet.columns = [
+    { header: QUESTION_HEADERS[0], key: 'questionNumber', width: 10 },
+    { header: QUESTION_HEADERS[1], key: 'question', width: 52 },
+    { header: QUESTION_HEADERS[2], key: 'optionA', width: 30 },
+    { header: QUESTION_HEADERS[3], key: 'optionB', width: 30 },
+    { header: QUESTION_HEADERS[4], key: 'optionC', width: 30 },
+    { header: QUESTION_HEADERS[5], key: 'optionD', width: 30 },
+    { header: QUESTION_HEADERS[6], key: 'correctChoice', width: 18 },
+  ];
+  sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  sheet.getRow(1).fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF1D3C78' },
+  };
+  sheet.views = [{ state: 'frozen', ySplit: 1 }];
+  sheet.autoFilter = { from: 'A1', to: 'G1' };
+  sheet.dataValidations.add(`G2:G${MAX_QUESTIONS + 1}`, {
+    type: 'list',
+    allowBlank: true,
+    formulae: ['"A,B,C,D"'],
+    showErrorMessage: true,
+    errorTitle: 'Invalid correct choice',
+    error: 'Choose A, B, C, or D.',
+  });
+
+  try {
+    const buffer = await workbook.xlsx.writeBuffer();
+    res.type('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.attachment(`test-${testNumber}-questions-template.xlsx`);
+    res.send(Buffer.from(buffer));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Could not create the Excel template.' });
+  }
+});
+
+app.post(
+  '/api/tests/:testNumber/upload',
+  express.raw({ type: 'application/octet-stream', limit: MAX_UPLOAD_BYTES }),
+  (error, req, res, next) => {
+    if (!error) return next();
+    if (error.type === 'entity.too.large') {
+      return res.status(413).json({ error: 'Excel files must be 5 MB or smaller.' });
+    }
+    return res.status(400).json({ error: 'Could not read the uploaded Excel file.' });
+  },
+  async (req, res) => {
+    const testNumber = Number(req.params.testNumber);
+    const targetPath = questionFiles.get(testNumber);
+    if (!targetPath) return res.status(404).json({ error: 'Test not found.' });
+    if (!Buffer.isBuffer(req.body) || !req.body.length) {
+      return res.status(400).json({ error: 'Choose an Excel template containing questions to upload.' });
+    }
+
+    try {
+      const questions = await parseQuestionWorkbook(req.body);
+      await queueWrite(async () => {
+        const temporaryPath = `${targetPath}.${process.pid}.${Date.now()}.tmp`;
+        await fs.promises.writeFile(
+          temporaryPath,
+          `// Generated from the Test ${testNumber} Excel upload.\nmodule.exports = ${JSON.stringify(questions, null, 2)};\n`,
+          'utf8',
+        );
+        await fs.promises.rename(temporaryPath, targetPath);
+        tests.set(testNumber, questions);
+        questionSets[testNumber - 1] = questions;
+      });
+      res.json({ success: true, testNumber, questionCount: questions.length });
+    } catch (error) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
+      console.error(error);
+      res.status(500).json({ error: 'Could not save the uploaded questions.' });
+    }
+  },
+);
 
 // Serialize writes so two submissions at once can't overwrite each other.
 let writeQueue = Promise.resolve();
@@ -56,7 +239,7 @@ async function loadWorkbook() {
       { header: 'Roll No', width: 12 },
       { header: 'Student Name', width: 28 },
       { header: 'Test Number', width: 12 },
-      ...Array.from({ length: maxQuestions }, (_, i) => ({ header: `Q${i + 1}`, width: 6 })),
+      ...Array.from({ length: currentMaxQuestions() }, (_, i) => ({ header: `Q${i + 1}`, width: 6 })),
       { header: 'Score', width: 10 },
       { header: 'Percentage', width: 12 },
       { header: 'Submitted At', width: 22 },
@@ -82,7 +265,7 @@ async function loadWorkbook() {
     }
   }
 
-  for (let questionNumber = 1; questionNumber <= maxQuestions; questionNumber += 1) {
+  for (let questionNumber = 1; questionNumber <= currentMaxQuestions(); questionNumber += 1) {
     let hasQuestionColumn = false;
     sheet.getRow(1).eachCell((cell) => {
       if (String(cell.value).trim().toLowerCase() === `q${questionNumber}`.toLowerCase()) hasQuestionColumn = true;
@@ -130,6 +313,7 @@ app.post('/api/submit', async (req, res) => {
     await queueWrite(async () => {
       const workbook = await loadWorkbook();
       const sheet = workbook.getWorksheet('Marksheet');
+      const maxQuestions = currentMaxQuestions();
 
       const row = [
         roll,

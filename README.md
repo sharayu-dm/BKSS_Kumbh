@@ -38,7 +38,13 @@ Open http://localhost:3000 in a browser.
 
 ## Changing the questions
 
-Edit `questions.js` for Test 1, `questions1.js` for Test 2, or `questions2.js` for Test 3. Each file exports an array of question objects with four options. `answer` is the index of the correct option: 0 = A, 1 = B, 2 = C, 3 = D. Restart the server after editing.
+Edit `questions.js` for Test 1, `questions1.js` for Test 2, or `questions2.js` for Test 3. Each file exports an array of question objects with four options. `answer` is the index of the correct option: 0 = A, 1 = B, 2 = C, 3 = D. Restart the server after editing a question file manually. Excel uploads take effect immediately without a restart.
+
+## Uploading questions from Excel
+
+On the home page, download the template for the test you want to update, fill it in, and use that test's upload button. The worksheet must include these columns: `Q No`, `Question Description`, `Option A`, `Option B`, `Option C`, `Option D`, and `Correct Choice`. Number questions consecutively from 1, provide all four options, and enter `A`, `B`, `C`, or `D` as the correct choice. Uploads accept `.xlsx` files with 1–200 questions and replace only the selected test's questions.
+
+The selected question file (`questions.js`, `questions1.js`, or `questions2.js`) is updated on the server. Keep the uploaded workbook if you need the original Excel version; the server stores the questions as JSON-formatted JavaScript.
 
 ## Use from other computers on the same network
 

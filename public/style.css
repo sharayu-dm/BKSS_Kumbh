@@ -60,6 +60,36 @@ header p { margin: 0 0 20px; color: #52606d; }
 .test-details small { color: #52606d; font-size: 13px; }
 .test-arrow { margin-left: auto; color: #1d3c78; font-size: 22px; }
 
+.upload-section {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid #cbd2d9;
+}
+
+.upload-section h2 { margin: 0 0 6px; font-size: 20px; }
+.upload-section > p { margin: 0 0 14px; color: #52606d; }
+
+.upload-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.upload-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid #cbd2d9;
+  border-radius: 8px;
+}
+
+.upload-option a { color: #1d3c78; font-size: 14px; }
+.upload-button { width: 100%; padding: 10px 12px; font-size: 14px; }
+.upload-status { margin-top: 12px !important; font-weight: 600; }
+
 .back {
   margin: 2px 0 12px;
   padding: 6px 0;
@@ -127,6 +157,6 @@ button:disabled { opacity: 0.6; cursor: default; }
 
 @media (max-width: 560px) {
   .student { grid-template-columns: 1fr; }
-  .test-options { grid-template-columns: 1fr; }
+  .test-options, .upload-options { grid-template-columns: 1fr; }
   .test-option { min-height: 84px; }
 }
