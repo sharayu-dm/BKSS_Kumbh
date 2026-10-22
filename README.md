@@ -12,7 +12,9 @@ Kumbh/
 ├── questions1.js       # Test 2 questions
 ├── questions2.js       # Test 3 questions
 ├── public/
-│   ├── index.html      # question paper page
+│   ├── index.html      # question-paper upload page
+│   ├── tests.html      # test selection and question paper page
+│   ├── upload.js       # handles Excel uploads
 │   ├── style.css       # styling
 │   └── app.js          # loads questions, validates and submits answers
 └── data/
@@ -42,7 +44,7 @@ Edit `questions.js` for Test 1, `questions1.js` for Test 2, or `questions2.js` f
 
 ## Uploading questions from Excel
 
-On the home page, download the template for the test you want to update, fill it in, and use that test's upload button. The worksheet must include these columns: `Q No`, `Question Description`, `Option A`, `Option B`, `Option C`, `Option D`, and `Correct Choice`. Number questions consecutively from 1, provide all four options, and enter `A`, `B`, `C`, or `D` as the correct choice. Uploads accept `.xlsx` files with 1–200 questions and replace only the selected test's questions.
+The home page is dedicated to question-paper uploads. Download the template for the test you want to update, fill it in, and use that test's upload button. After a successful upload, the app opens the separate test page, where students can choose and take a test. The test page also has a link back to the upload page. The worksheet must include these columns: `Q No`, `Question Description`, `Option A`, `Option B`, `Option C`, `Option D`, and `Correct Choice`. Number questions consecutively from 1, provide all four options, and enter `A`, `B`, `C`, or `D` as the correct choice. Uploads accept `.xlsx` files with 1–200 questions and replace only the selected test's questions.
 
 The selected question file (`questions.js`, `questions1.js`, or `questions2.js`) is updated on the server. Keep the uploaded workbook if you need the original Excel version; the server stores the questions as JSON-formatted JavaScript.
 

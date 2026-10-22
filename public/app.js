@@ -6,8 +6,6 @@ const submitBtn = document.getElementById('submit');
 const resultBox = document.getElementById('result');
 const selection = document.getElementById('test-selection');
 const testOptions = document.getElementById('test-options');
-const uploadOptions = document.getElementById('upload-options');
-const uploadStatus = document.getElementById('upload-status');
 const quiz = document.getElementById('quiz');
 const pageTitle = document.getElementById('page-title');
 const pageDescription = document.getElementById('page-description');
@@ -77,53 +75,6 @@ testOptions.addEventListener('click', async (event) => {
     selectionError.hidden = false;
   } finally {
     button.disabled = false;
-  }
-});
-
-uploadOptions.addEventListener('click', (event) => {
-  const button = event.target.closest('[data-upload-test]');
-  if (!button) return;
-  uploadOptions.querySelector(`[data-file-test="${button.dataset.uploadTest}"]`).click();
-});
-
-uploadOptions.addEventListener('change', async (event) => {
-  const input = event.target.closest('[data-file-test]');
-  if (!input || !input.files.length) return;
-
-  const testNumber = Number(input.dataset.fileTest);
-  const file = input.files[0];
-  input.value = '';
-  uploadStatus.hidden = true;
-  if (!file.name.toLowerCase().endsWith('.xlsx')) {
-    uploadStatus.textContent = 'Please choose an .xlsx Excel file.';
-    uploadStatus.className = 'upload-status error';
-    uploadStatus.hidden = false;
-    return;
-  }
-
-  const uploadButton = uploadOptions.querySelector(`[data-upload-test="${testNumber}"]`);
-  uploadButton.disabled = true;
-  uploadStatus.textContent = `Uploading Test ${testNumber} questions...`;
-  uploadStatus.className = 'upload-status';
-  uploadStatus.hidden = false;
-
-  try {
-    const res = await fetch(`/api/tests/${testNumber}/upload`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/octet-stream' },
-      body: file,
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Could not upload the questions.');
-
-    uploadStatus.textContent = `Test ${testNumber} updated with ${data.questionCount} questions.`;
-    await loadTests();
-  } catch (err) {
-    uploadStatus.textContent = err.message;
-    uploadStatus.className = 'upload-status error';
-  } finally {
-    uploadStatus.hidden = false;
-    uploadButton.disabled = false;
   }
 });
 

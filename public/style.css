@@ -16,6 +16,7 @@ main {
 header h1 { margin: 0 0 4px; color: #1d3c78; }
 header p { margin: 0 0 20px; color: #52606d; }
 .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 1px; }
+.back-link { display: inline-block; margin: 0 0 12px; color: #1d3c78; }
 
 #test-selection h2 { margin: 28px 0 14px; font-size: 20px; }
 

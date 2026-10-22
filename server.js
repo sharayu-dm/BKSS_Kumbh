@@ -35,6 +35,9 @@ fs.mkdirSync(DATA_DIR, { recursive: true });
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+app.get('/tests', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'tests.html'));
+});
 
 function currentMaxQuestions() {
   return Math.max(...Array.from(tests.values(), (questions) => questions.length));
