@@ -3,26 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kumbh – Choose a Test</title>
+  <title>Kumbh – Assessment</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main>
     <header>
       <p class="eyebrow">KUMBH ASSESSMENT</p>
-      <h1 id="page-title">Choose a test</h1>
-      <p id="page-description">Select a test to begin.</p>
-      <a class="back-link" href="/">Upload or replace test papers</a>
+      <h1 id="page-title">Assessment</h1>
+      <p id="page-description">Loading the test assigned to your batch...</p>
+      <a class="back-link" id="batch-link" href="/">Choose another batch</a>
+      <p id="selection-error" class="error" role="alert" hidden></p>
     </header>
 
-    <section id="test-selection" aria-labelledby="test-selection-title">
-      <h2 id="test-selection-title">Available tests</h2>
-      <div id="test-options" class="test-options"></div>
-      <p id="selection-error" class="error" hidden></p>
-    </section>
-
     <section id="quiz" hidden>
-      <button type="button" id="back-to-tests" class="back">Back to tests</button>
       <form id="paper" novalidate hidden>
         <section class="card student">
           <label>
@@ -45,7 +39,7 @@
     <section id="result" class="card result" hidden>
       <h2>Thank you!</h2>
       <p>Your marks have been submitted.</p>
-      <button type="button" id="another-test">Choose another test</button>
+      <button type="button" id="another-test">Choose another batch</button>
     </section>
   </main>
 

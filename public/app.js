@@ -4,15 +4,16 @@ const errorBox = document.getElementById('error');
 const selectionError = document.getElementById('selection-error');
 const submitBtn = document.getElementById('submit');
 const resultBox = document.getElementById('result');
-const selection = document.getElementById('test-selection');
-const testOptions = document.getElementById('test-options');
 const quiz = document.getElementById('quiz');
 const pageTitle = document.getElementById('page-title');
 const pageDescription = document.getElementById('page-description');
+const batchLink = document.getElementById('batch-link');
 const LETTERS = ['A', 'B', 'C', 'D'];
 
 let questions = [];
 let activeTestNumber = null;
+let activeTestType = null;
+let activeBatchNumber = null;
 
 function escapeHtml(s) {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -30,76 +31,51 @@ function renderQuestions() {
     </section>`).join('');
 }
 
-async function loadTests() {
-  const res = await fetch('/api/tests');
-  if (!res.ok) throw new Error('Could not load tests. Is the server running?');
-  const tests = await res.json();
-  testOptions.innerHTML = tests.map((test) => `
-    <button type="button" class="test-option" data-test-number="${test.number}">
-      <span class="test-number">${String(test.number).padStart(2, '0')}</span>
-      <span class="test-details">
-        <strong>Test ${test.number}</strong>
-        <small>${test.questionCount} questions</small>
-      </span>
-      <span class="test-arrow" aria-hidden="true">&#8594;</span>
-    </button>`).join('');
-}
-
-testOptions.addEventListener('click', async (event) => {
-  const button = event.target.closest('[data-test-number]');
-  if (!button) return;
-
-  selectionError.hidden = true;
-  button.disabled = true;
-  const testNumber = Number(button.dataset.testNumber);
-  try {
-    const res = await fetch(`/api/tests/${testNumber}/questions`);
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Could not load this test.');
-
-    activeTestNumber = testNumber;
-    questions = data;
-    renderQuestions();
-    pageTitle.textContent = `Test ${testNumber}`;
-    pageDescription.textContent = `Answer all ${questions.length} questions. Each question carries 1 mark.`;
-    selection.hidden = true;
-    resultBox.hidden = true;
-    quiz.hidden = false;
-    form.hidden = false;
-    form.reset();
-    submitBtn.disabled = false;
-    errorBox.hidden = true;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  } catch (err) {
-    selectionError.textContent = err.message;
-    selectionError.hidden = false;
-  } finally {
-    button.disabled = false;
+async function loadAssignedTest() {
+  const params = new URLSearchParams(window.location.search);
+  const testType = params.get('type');
+  const batchNumber = Number(params.get('batch'));
+  if (!['pre', 'post'].includes(testType)
+    || !Number.isInteger(batchNumber)
+    || batchNumber < 1
+    || batchNumber > 70) {
+    throw new Error('Choose a pre-test or post-test and a batch from the home page.');
   }
-});
+
+  const assignmentsResponse = await fetch('/api/batches');
+  if (!assignmentsResponse.ok) throw new Error('Could not load the batch assignments.');
+  const assignments = await assignmentsResponse.json();
+  const assignment = assignments.find((batch) => batch.batchNumber === batchNumber);
+  if (!assignment) throw new Error('The selected batch does not have an assigned test.');
+
+  const res = await fetch(`/api/tests/${assignment.testNumber}/questions`);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Could not load this test.');
+
+  activeTestType = testType;
+  activeBatchNumber = batchNumber;
+  activeTestNumber = assignment.testNumber;
+  questions = data;
+  renderQuestions();
+  pageTitle.textContent = `${testType === 'pre' ? 'Pre-test' : 'Post-test'} · Batch ${batchNumber} · Test ${activeTestNumber}`;
+  pageDescription.textContent = `Answer all ${questions.length} questions. Each question carries 1 mark.`;
+  batchLink.href = `/?type=${testType}`;
+  resultBox.hidden = true;
+  quiz.hidden = false;
+  form.hidden = false;
+  form.reset();
+  submitBtn.disabled = false;
+  errorBox.hidden = true;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
 function showError(msg) {
   errorBox.textContent = msg;
   errorBox.hidden = false;
 }
 
-document.getElementById('back-to-tests').addEventListener('click', () => {
-  quiz.hidden = true;
-  selection.hidden = false;
-  form.reset();
-  errorBox.hidden = true;
-  activeTestNumber = null;
-  pageTitle.textContent = 'MCQ Question Paper';
-  pageDescription.textContent = 'Select a test to begin.';
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-});
-
 document.getElementById('another-test').addEventListener('click', () => {
-  resultBox.hidden = true;
-  selection.hidden = false;
-  pageTitle.textContent = 'MCQ Question Paper';
-  pageDescription.textContent = 'Select a test to begin.';
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  window.location.assign(`/?type=${activeTestType}`);
 });
 
 form.addEventListener('submit', async (e) => {
@@ -129,7 +105,14 @@ form.addEventListener('submit', async (e) => {
     const res = await fetch('/api/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, roll, testNumber: activeTestNumber, answers }),
+      body: JSON.stringify({
+        name,
+        roll,
+        testType: activeTestType,
+        batchNumber: activeBatchNumber,
+        testNumber: activeTestNumber,
+        answers,
+      }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Submission failed.');
@@ -143,7 +126,7 @@ form.addEventListener('submit', async (e) => {
   }
 });
 
-loadTests().catch((err) => {
+loadAssignedTest().catch((err) => {
   selectionError.textContent = err.message;
   selectionError.hidden = false;
 });

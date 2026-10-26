@@ -20,6 +20,36 @@ header p { margin: 0 0 20px; color: #52606d; }
 
 #test-selection h2 { margin: 28px 0 14px; font-size: 20px; }
 
+.test-type-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.test-type-option {
+  min-height: 88px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.test-type-option.selected { background: #315a9e; }
+
+.batch-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.batch-option {
+  min-height: 54px;
+  padding: 10px 6px;
+}
+
+.selection-description { color: #52606d; }
+.admin-link { margin-top: 32px; }
+.admin-link a { color: #1d3c78; }
+
 .test-options {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -158,6 +188,7 @@ button:disabled { opacity: 0.6; cursor: default; }
 
 @media (max-width: 560px) {
   .student { grid-template-columns: 1fr; }
-  .test-options, .upload-options { grid-template-columns: 1fr; }
+  .test-options, .upload-options, .test-type-options { grid-template-columns: 1fr; }
+  .batch-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .test-option { min-height: 84px; }
 }

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kumbh – Upload Test Papers</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <p class="eyebrow">KUMBH ASSESSMENT</p>
+      <h1>Upload test papers</h1>
+      <p>Upload a question paper for a test. After a successful upload, you can return to batch selection.</p>
+      <a class="back-link" href="/">Back to assessments</a>
+    </header>
+
+    <section class="upload-section" aria-labelledby="upload-title">
+      <h2 id="upload-title">Choose a test paper to upload</h2>
+      <p>Download the matching template first if needed. Uploading a paper replaces the questions for that test.</p>
+      <div id="upload-options" class="upload-options">
+        <div class="upload-option">
+          <strong>Test 1</strong>
+          <button type="button" class="upload-button" data-upload-test="1">Upload Test 1 Excel</button>
+          <a href="/api/tests/1/template">Download template</a>
+          <input type="file" accept=".xlsx" data-file-test="1" hidden>
+        </div>
+        <div class="upload-option">
+          <strong>Test 2</strong>
+          <button type="button" class="upload-button" data-upload-test="2">Upload Test 2 Excel</button>
+          <a href="/api/tests/2/template">Download template</a>
+          <input type="file" accept=".xlsx" data-file-test="2" hidden>
+        </div>
+        <div class="upload-option">
+          <strong>Test 3</strong>
+          <button type="button" class="upload-button" data-upload-test="3">Upload Test 3 Excel</button>
+          <a href="/api/tests/3/template">Download template</a>
+          <input type="file" accept=".xlsx" data-file-test="3" hidden>
+        </div>
+      </div>
+      <p id="upload-status" class="upload-status" role="status" aria-live="polite" hidden></p>
+    </section>
+  </main>
+
+  <script src="upload.js"></script>
+</body>
+</html>

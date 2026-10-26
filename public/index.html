@@ -3,44 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kumbh – MCQ Question Paper</title>
+  <title>Kumbh – Select Assessment</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main>
     <header>
       <p class="eyebrow">KUMBH ASSESSMENT</p>
-      <h1>Upload test papers</h1>
-      <p>Upload a question paper for a test. After a successful upload, you will go to the test page.</p>
+      <h1>Choose your assessment</h1>
+      <p>Select a pre-test or post-test, then choose your batch to open its assigned test.</p>
     </header>
 
-    <section class="upload-section" aria-labelledby="upload-title">
-      <h2 id="upload-title">Choose a test paper to upload</h2>
-      <p>Download the matching template first if needed. Uploading a paper replaces the questions for that test.</p>
-      <div id="upload-options" class="upload-options">
-        <div class="upload-option">
-          <strong>Test 1</strong>
-          <button type="button" class="upload-button" data-upload-test="1">Upload Test 1 Excel</button>
-          <a href="/api/tests/1/template">Download template</a>
-          <input type="file" accept=".xlsx" data-file-test="1" hidden>
-        </div>
-        <div class="upload-option">
-          <strong>Test 2</strong>
-          <button type="button" class="upload-button" data-upload-test="2">Upload Test 2 Excel</button>
-          <a href="/api/tests/2/template">Download template</a>
-          <input type="file" accept=".xlsx" data-file-test="2" hidden>
-        </div>
-        <div class="upload-option">
-          <strong>Test 3</strong>
-          <button type="button" class="upload-button" data-upload-test="3">Upload Test 3 Excel</button>
-          <a href="/api/tests/3/template">Download template</a>
-          <input type="file" accept=".xlsx" data-file-test="3" hidden>
-        </div>
+    <section aria-labelledby="test-type-title">
+      <h2 id="test-type-title">Select test type</h2>
+      <div class="test-type-options">
+        <button type="button" class="test-type-option" data-test-type="pre">Pre-test</button>
+        <button type="button" class="test-type-option" data-test-type="post">Post-test</button>
       </div>
-      <p id="upload-status" class="upload-status" role="status" aria-live="polite" hidden></p>
     </section>
+
+    <section id="batch-selection" aria-labelledby="batch-title" hidden>
+      <h2 id="batch-title">Select your batch</h2>
+      <p id="selected-test-type" class="selection-description"></p>
+      <div id="batch-options" class="batch-grid"></div>
+      <p id="selection-error" class="error" role="alert" hidden></p>
+    </section>
+
+    <p class="admin-link"><a href="/upload">Upload or replace test papers</a></p>
   </main>
 
-  <script src="upload.js"></script>
+  <script src="landing.js"></script>
 </body>
 </html>

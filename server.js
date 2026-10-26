@@ -13,6 +13,15 @@ const questionFiles = new Map([
   [2, path.join(__dirname, 'questions1.js')],
   [3, path.join(__dirname, 'questions2.js')],
 ]);
+const BATCH_TESTS = [
+  2, 3, 3, 2, 2, 2, 1, 2, 3, 1,
+  2, 2, 1, 3, 2, 2, 2, 2, 2, 2,
+  3, 2, 1, 2, 3, 2, 1, 2, 2, 1,
+  2, 3, 2, 1, 1, 2, 3, 2, 3, 3,
+  3, 1, 1, 1, 2, 3, 1, 2, 2, 1,
+  3, 3, 3, 2, 1, 3, 2, 2, 3, 2,
+  3, 2, 3, 2, 3, 3, 3, 3, 3, 2,
+];
 
 const PORT = process.env.PORT || 3000;
 const DATA_DIR = path.join(__dirname, 'data');
@@ -37,6 +46,9 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/tests', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'tests.html'));
+});
+app.get('/upload', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'upload.html'));
 });
 
 function currentMaxQuestions() {
@@ -129,6 +141,13 @@ app.get('/api/tests', (req, res) => {
   res.json(questionSets.map((questions, index) => ({
     number: index + 1,
     questionCount: questions.length,
+  })));
+});
+
+app.get('/api/batches', (req, res) => {
+  res.json(BATCH_TESTS.map((testNumber, index) => ({
+    batchNumber: index + 1,
+    testNumber,
   })));
 });
 
@@ -287,12 +306,28 @@ async function loadWorkbook() {
     }
   }
 
+  ['Test Type', 'Batch Number'].forEach((headerText) => {
+    let hasHeader = false;
+    sheet.getRow(1).eachCell((cell) => {
+      if (String(cell.value).trim().toLowerCase() === headerText.toLowerCase()) hasHeader = true;
+    });
+    if (!hasHeader) {
+      const columnNumber = sheet.columnCount + 1;
+      const header = sheet.getRow(1).getCell(columnNumber);
+      header.value = headerText;
+      header.font = { bold: true };
+      sheet.getColumn(columnNumber).width = 14;
+    }
+  });
+
   return workbook;
 }
 
 app.post('/api/submit', async (req, res) => {
   const name = String(req.body.name || '').trim();
   const roll = String(req.body.roll || '').trim();
+  const testType = String(req.body.testType || '');
+  const batchNumber = Number(req.body.batchNumber);
   const testNumber = Number(req.body.testNumber);
   const questions = tests.get(testNumber);
   const answers = Array.isArray(req.body.answers) ? req.body.answers : [];
@@ -302,6 +337,13 @@ app.post('/api/submit', async (req, res) => {
   }
   if (!Number.isInteger(testNumber) || !questions) {
     return res.status(400).json({ error: 'Please select a valid test.' });
+  }
+  if (!['pre', 'post'].includes(testType)
+    || !Number.isInteger(batchNumber)
+    || batchNumber < 1
+    || batchNumber > BATCH_TESTS.length
+    || BATCH_TESTS[batchNumber - 1] !== testNumber) {
+    return res.status(400).json({ error: 'The selected test does not match this batch.' });
   }
   if (answers.length !== questions.length || answers.some((answer, index) => (
     !Number.isInteger(answer) || answer < 0 || answer >= questions[index].options.length
@@ -316,19 +358,25 @@ app.post('/api/submit', async (req, res) => {
     await queueWrite(async () => {
       const workbook = await loadWorkbook();
       const sheet = workbook.getWorksheet('Marksheet');
-      const maxQuestions = currentMaxQuestions();
-
-      const row = [
-        roll,
-        name,
-        testNumber,
-        ...answers.map((answer, i) => `${LETTERS[answer]} ${results[i] ? '✔' : '✘'}`),
-        ...Array(maxQuestions - answers.length).fill(''),
-        `${score}/${questions.length}`,
-        `${Math.round((score / questions.length) * 100)}%`,
-        new Date().toLocaleString('en-IN'),
-      ];
-      sheet.addRow(row);
+      const rowValues = Array(sheet.columnCount).fill('');
+      const valuesByHeader = new Map([
+        ['roll no', roll],
+        ['student name', name],
+        ['test number', testNumber],
+        ['score', `${score}/${questions.length}`],
+        ['percentage', `${Math.round((score / questions.length) * 100)}%`],
+        ['submitted at', new Date().toLocaleString('en-IN')],
+        ['test type', `${testType}-test`],
+        ['batch number', batchNumber],
+      ]);
+      answers.forEach((answer, index) => {
+        valuesByHeader.set(`q${index + 1}`, `${LETTERS[answer]} ${results[index] ? '✔' : '✘'}`);
+      });
+      sheet.getRow(1).eachCell((cell, columnNumber) => {
+        const header = String(cell.value || '').trim().toLowerCase();
+        if (valuesByHeader.has(header)) rowValues[columnNumber - 1] = valuesByHeader.get(header);
+      });
+      sheet.addRow(rowValues);
 
       await workbook.xlsx.writeFile(MARKSHEET);
     });

@@ -37,8 +37,8 @@ uploadOptions.addEventListener('change', async (event) => {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Could not upload the questions.');
 
-    uploadStatus.textContent = `Test ${testNumber} updated with ${data.questionCount} questions. Opening the test page...`;
-    window.setTimeout(() => window.location.assign('/tests'), 500);
+    uploadStatus.textContent = `Test ${testNumber} updated with ${data.questionCount} questions. Returning to batch selection...`;
+    window.setTimeout(() => window.location.assign('/'), 500);
   } catch (err) {
     uploadStatus.textContent = err.message;
     uploadStatus.className = 'upload-status error';
